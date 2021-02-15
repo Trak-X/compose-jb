@@ -14,14 +14,14 @@ abstract class AbstractCheckNotarizationStatusTask : AbstractNotarizationTask() 
         val notarization = validateNotarization()
 
         val requestId = requestIDFile.ioFile.readText()
-        execOperations.exec { exec ->
-            exec.executable = MacUtils.xcrun.absolutePath
-            exec.args(
+        runExternalTool(
+            tool = MacUtils.xcrun,
+            args = listOf(
                 "altool",
                 "--notarization-info", requestId,
                 "--username", notarization.appleID,
                 "--password", notarization.password
             )
-        }
+        )
     }
 }

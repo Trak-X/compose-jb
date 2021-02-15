@@ -5,7 +5,6 @@ import org.jetbrains.compose.desktop.application.internal.OS
 import org.jetbrains.compose.desktop.application.internal.currentOS
 import org.jetbrains.compose.desktop.application.internal.currentTarget
 import org.jetbrains.compose.test.*
-import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.util.jar.JarFile

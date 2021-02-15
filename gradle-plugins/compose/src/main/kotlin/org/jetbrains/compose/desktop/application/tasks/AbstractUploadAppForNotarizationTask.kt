@@ -31,38 +31,29 @@ abstract class AbstractUploadAppForNotarizationTask @Inject constructor(
         val file = inputFile.checkExistingFile()
 
         logger.quiet("Uploading '${file.name}' for notarization (package id: '${notarization.bundleID}')")
-        val (res, output) = ByteArrayOutputStream().use { baos ->
-            PrintStream(baos).use { ps ->
-                val res = execOperations.exec { exec ->
-                    exec.executable = MacUtils.xcrun.absolutePath
-                    exec.args(
-                        "altool",
-                        "--notarize-app",
-                        "--primary-bundle-id", notarization.bundleID,
-                        "--username", notarization.appleID,
-                        "--password", notarization.password,
-                        "--file", file
-                    )
-                    exec.standardOutput = ps
+        runExternalTool(
+            tool = MacUtils.xcrun,
+            args = listOf(
+                "altool",
+                "--notarize-app",
+                "--primary-bundle-id", notarization.bundleID,
+                "--username", notarization.appleID,
+                "--password", notarization.password,
+                "--file", file.absolutePath
+            ),
+            processStdout = { outFile ->
+                val m = "RequestUUID = ([A-Za-z0-9\\-]+)".toRegex().find(outFile.readText())
+                    ?: error("Could not determine RequestUUID from output: $outFile")
+
+                val requestId = m.groupValues[1]
+                requestIDFile.ioFile.apply {
+                    parentFile.mkdirs()
+                    writeText(requestId)
                 }
 
-                res to baos.toString()
+                logger.quiet("Request UUID: $requestId")
+                logger.quiet("Request UUID is saved to ${requestIDFile.ioFile.absolutePath}")
             }
-        }
-        if (res.exitValue != 0) {
-            logger.error("Uploading failed. Stdout: $output")
-            res.assertNormalExitValue()
-        }
-        val m = "RequestUUID = ([A-Za-z0-9\\-]+)".toRegex().find(output)
-            ?: error("Could not determine RequestUUID from output: $output")
-
-        val requestId = m.groupValues[1]
-        requestIDFile.ioFile.apply {
-            parentFile.mkdirs()
-            writeText(requestId)
-        }
-
-        logger.quiet("Request UUID: $requestId")
-        logger.quiet("Request UUID is saved to ${requestIDFile.ioFile.absolutePath}")
+        )
     }
 }
